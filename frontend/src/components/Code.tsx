@@ -203,7 +203,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           </select>
         </div>
         <button className="px-4 py-1 border  cursor-pointer rounded-lg bg-[#324CCD] text-white">
-          Submit
+          Run
         </button>
       </div>
       <div
