@@ -8,26 +8,78 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Judge0_Exec = void 0;
+const axios_1 = __importDefault(require("axios"));
 const Judge0_Exec = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { code, language } = req.body;
-    console.log(code);
-    if (!code) {
-        res.status(200).json({ msg: "Run with some code bro" });
+    const { code, languageId } = req.body;
+    // Check if code and languageId are provided
+    if (!code || !languageId) {
+        return res.status(400).json({ msg: "Please provide both code and languageId." });
     }
+    console.log("Code:", code);
+    console.log("Language ID:", languageId);
+    const RAPIDAPI_KEY = "ee9802bac2mshc19335451bfac76p1217ccjsn09eaf5790b55";
+    const RAPIDAPI_HOST = "judge0-ce.p.rapidapi.com";
+    const headers = {
+        "content-type": "application/json",
+        "X-RapidAPI-Host": RAPIDAPI_HOST,
+        "X-RapidAPI-Key": RAPIDAPI_KEY,
+    };
     try {
-        const output = "hello world";
-        res.status(200).json({
-            msg: "Code reached i think",
-            lang: language,
-            output: output
-        });
-        return;
+        // Step 1: Submit the code
+        const submission = yield axios_1.default.post("https://judge0-ce.p.rapidapi.com/submissions", {
+            source_code: code,
+            language_id: languageId,
+        }, { headers });
+        if (!submission.data.token) {
+            return res.status(400).json({ msg: "Failed to get submission token." });
+        }
+        const token = submission.data.token;
+        // Step 2: Poll for results
+        let maxAttempts = 10;
+        let attempts = 0;
+        let result;
+        while (attempts < maxAttempts) {
+            try {
+                const response = yield axios_1.default.get(`https://judge0-ce.p.rapidapi.com/submissions/${token}`, { headers });
+                result = response.data;
+                // Check if the execution is complete
+                if (result.status.id === 3) { // 3 means "Accepted" or completed
+                    return res.status(200).json({
+                        msg: "Code executed successfully",
+                        lang: languageId,
+                        data: result,
+                        output: result.stdout || result.compile_output || "No output",
+                    });
+                }
+                // If status is "Processing" (id: 1 or 2), wait and try again
+                if (result.status.id <= 2) {
+                    yield new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+                    attempts++;
+                    continue;
+                }
+                // If we get here, there was an error in execution
+                return res.status(400).json({
+                    msg: "Code execution failed",
+                    status: result.status,
+                    error: result.stderr || result.compile_output || "Unknown error",
+                });
+            }
+            catch (pollError) {
+                console.error("Error polling for results:", pollError);
+                attempts++;
+                yield new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+        return res.status(408).json({ msg: "Timeout while waiting for code execution." });
     }
     catch (e) {
-        res.status(400).json({ msg: "Some error in catch block now" });
-        return;
+        console.error("Error executing code:", e);
+        return res.status(500).json({ msg: "Error occurred while executing the code." });
     }
 });
 exports.Judge0_Exec = Judge0_Exec;
