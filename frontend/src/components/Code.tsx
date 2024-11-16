@@ -96,7 +96,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
       setEditor(newEditor);
 
-      // Add onChange listener
       newEditor.onDidChangeModelContent(() => {
         const value = newEditor.getValue();
         onChange?.(value);

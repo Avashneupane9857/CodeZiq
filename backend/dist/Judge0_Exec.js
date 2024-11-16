@@ -16,7 +16,6 @@ exports.Judge0_Exec = void 0;
 const axios_1 = __importDefault(require("axios"));
 const Judge0_Exec = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { code, languageId } = req.body;
-    // Check if code and languageId are provided
     if (!code || !languageId) {
         return res.status(400).json({ msg: "Please provide both code and languageId." });
     }
@@ -30,7 +29,6 @@ const Judge0_Exec = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         "X-RapidAPI-Key": RAPIDAPI_KEY,
     };
     try {
-        // Step 1: Submit the code
         const submission = yield axios_1.default.post("https://judge0-ce.p.rapidapi.com/submissions", {
             source_code: code,
             language_id: languageId,
@@ -39,7 +37,6 @@ const Judge0_Exec = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             return res.status(400).json({ msg: "Failed to get submission token." });
         }
         const token = submission.data.token;
-        // Step 2: Poll for results
         let maxAttempts = 10;
         let attempts = 0;
         let result;
@@ -47,8 +44,7 @@ const Judge0_Exec = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             try {
                 const response = yield axios_1.default.get(`https://judge0-ce.p.rapidapi.com/submissions/${token}`, { headers });
                 result = response.data;
-                // Check if the execution is complete
-                if (result.status.id === 3) { // 3 means "Accepted" or completed
+                if (result.status.id === 3) {
                     return res.status(200).json({
                         msg: "Code executed successfully",
                         lang: languageId,
@@ -56,13 +52,11 @@ const Judge0_Exec = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                         output: result.stdout || result.compile_output || "No output",
                     });
                 }
-                // If status is "Processing" (id: 1 or 2), wait and try again
                 if (result.status.id <= 2) {
-                    yield new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+                    yield new Promise(resolve => setTimeout(resolve, 1000));
                     attempts++;
                     continue;
                 }
-                // If we get here, there was an error in execution
                 return res.status(400).json({
                     msg: "Code execution failed",
                     status: result.status,
