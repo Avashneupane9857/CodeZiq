@@ -10,8 +10,14 @@ response aaucha tei with status code send garney and or kei response aaye pani o
 */
 const express_1 = __importDefault(require("express"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const cors_1 = __importDefault(require("cors"));
 const Judge0_Exec_1 = require("./Judge0_Exec");
 const app = (0, express_1.default)();
+app.use((0, cors_1.default)({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+}));
 app.use(express_1.default.json());
 dotenv_1.default.config({});
 const port = process.env.PORT;

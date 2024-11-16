@@ -5,8 +5,14 @@ response aaucha tei with status code send garney and or kei response aaye pani o
 */
 import express from "express"
 import dotenv from "dotenv"
+import cors from "cors";
 import { Judge0_Exec } from "./Judge0_Exec"
 const app=express()
+app.use(cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+  }));
 app.use(express.json())
 dotenv.config({})
 const port =process.env.PORT
